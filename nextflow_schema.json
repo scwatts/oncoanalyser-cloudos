@@ -67,6 +67,11 @@
                     "default": false,
                     "fa_icon": "fas fa-palette"
                 },
+                "use_purple_purity_ploidy_preset": {
+                    "type": "boolean",
+                    "description": "Apply PURPLE purity/ploidy presents via built-in config.",
+                    "fa_icon": "fas fa-diagram-project"
+                },
                 "processes_manual": {
                     "type": "boolean",
                     "description": "Run only processes manually provided in processes_include.",
