@@ -123,4 +123,20 @@ class WorkflowOncoanalyser {
         // contains the corresponding meta.id value, for example: [val(meta_process), *process_outputs]
         joinMeta([:], ch_output, ch_metas)
     }
+
+    public static selectCramBamOrAlignBam(ch_cram_bam, ch_align_bam) {
+        WorkflowOncoanalyser.groupByMeta(ch_cram_bam, ch_align_bam)
+            .map { meta, align_bam, align_bai, conv_bam, conv_bai ->
+                if (align_bam && conv_bam) {
+                    error "got both alignment BAM and conversion BAM"
+                } else if (align_bam) {
+                    return [meta, align_bam, align_bai]
+                } else if (conv_bam) {
+                    return [meta, conv_bam, conv_bai]
+                } else {
+                    return [meta, [], []]
+                }
+            }
+    }
+
 }

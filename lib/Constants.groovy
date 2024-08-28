@@ -39,6 +39,7 @@ class Constants {
         BAMTOOLS,
         CHORD,
         COBALT,
+        CRAM_BAM_CONVERSION,
         CUPPA,
         FLAGSTAT,
         GRIDSS,
@@ -57,9 +58,11 @@ class Constants {
 
     static enum FileType {
         // Generic
+        BAI,
         BAM,
         BAM_MARKDUPS,
-        BAI,
+        CRAI,
+        CRAM,
         FASTQ,
         // Process
         AMBER_DIR,
@@ -112,6 +115,12 @@ class Constants {
 
     static Map INPUT = [
 
+        CRAM_DNA_TUMOR: [
+            FileType.CRAM,
+            SampleType.TUMOR,
+            SequenceType.DNA,
+        ],
+
         BAM_DNA_TUMOR: [
             FileType.BAM,
             SampleType.TUMOR,
@@ -121,6 +130,12 @@ class Constants {
         BAM_MARKDUPS_DNA_TUMOR: [
             FileType.BAM_MARKDUPS,
             SampleType.TUMOR,
+            SequenceType.DNA,
+        ],
+
+        CRAM_DNA_NORMAL: [
+            FileType.CRAM,
+            SampleType.NORMAL,
             SequenceType.DNA,
         ],
 

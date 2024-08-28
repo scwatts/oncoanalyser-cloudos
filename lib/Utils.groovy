@@ -147,7 +147,10 @@ class Utils {
                         def index_enum
                         def index_str
 
-                        if (key === Constants.FileType.BAM) {
+                        if (key === Constants.FileType.CRAM) {
+                            index_enum = Constants.FileType.CRAI
+                            index_str = 'crai'
+                        } else if (key === Constants.FileType.BAM) {
                             index_enum = Constants.FileType.BAI
                             index_str = 'bai'
                         } else if (key === Constants.FileType.BAM_MARKDUPS) {
@@ -184,6 +187,20 @@ class Utils {
 
                         meta[sample_key][index_enum] = index_fp
 
+                    }
+                }
+
+                // Do not allow both CRAM and BAM/FASTQ to be provided. This is important so that we can operate with
+                // this assumption when joining the CRAM to BAM conversion output channel with the alignment output channel.
+                [Constants.SampleType.TUMOR, Constants.SampleType.NORMAL].each { sample_type ->
+                    if (sample_keys.contains([sample_type, Constants.FileType.CRAM])) {
+                        if (sample_keys.contains([sample_type, Constants.FileType.BAM])) {
+                            log.error "cannot provide both CRAM and BAM: ${meta.group_id} ${sample_type}/${sequence_type}: ${key}: ${fp}"
+                            Nextflow.exit(1)
+                        } else if (sample_keys.contains([sample_type, Constants.FileType.FASTQ])) {
+                            log.error "cannot provide both CRAM and FASTQ: ${meta.group_id} ${sample_type}/${sequence_type}: ${key}: ${fp}"
+                            Nextflow.exit(1)
+                        }
                     }
                 }
 
@@ -258,7 +275,8 @@ class Utils {
 
                 if (!meta[key].containsKey(Constants.FileType.BAM) &&
                     !meta[key].containsKey(Constants.FileType.BAM_MARKDUPS) &&
-                    !meta[key].containsKey(Constants.FileType.FASTQ)) {
+                    !meta[key].containsKey(Constants.FileType.FASTQ) &&
+                    !meta[key].containsKey(Constants.FileType.CRAM)) {
 
                     log.error "no BAMs nor BAM_MARKDUPs nor FASTQs provided for ${meta.group_id} ${sample_type}/${sequence_type}\n\n" +
                         "NB: BAMs or BAM_MARKDUPs or FASTQs are always required as they are the basis to determine input sample type."
@@ -429,6 +447,10 @@ class Utils {
         return getTumorDnaSample(meta).getOrDefault(Constants.FileType.BAM_MARKDUPS, null)
     }
 
+    static public getTumorDnaCram(meta) {
+        return getTumorDnaSample(meta).getOrDefault(Constants.FileType.CRAM, null)
+    }
+
     static public getTumorDnaBai(meta) {
         return getTumorDnaSample(meta).getOrDefault(Constants.FileType.BAI, null)
     }
@@ -446,6 +468,10 @@ class Utils {
         return getTumorDnaMarkdupsBam(meta) !== null
     }
 
+    static public hasTumorDnaCram(meta) {
+        return getTumorDnaCram(meta) !== null
+    }
+
 
     static public getNormalDnaFastq(meta) {
         return getNormalDnaSample(meta).getOrDefault(Constants.FileType.FASTQ, null)
@@ -458,8 +484,13 @@ class Utils {
     static public getNormalDnaMarkdupsBam(meta) {
         return getNormalDnaSample(meta).getOrDefault(Constants.FileType.BAM_MARKDUPS, null)
     }
+
     static public getNormalDnaBai(meta) {
         return getNormalDnaSample(meta).getOrDefault(Constants.FileType.BAI, null)
+    }
+
+    static public getNormalDnaCram(meta) {
+        return getNormalDnaSample(meta).getOrDefault(Constants.FileType.CRAM, null)
     }
 
 
@@ -473,6 +504,10 @@ class Utils {
 
     static public hasNormalDnaMarkdupsBam(meta) {
         return getNormalDnaMarkdupsBam(meta) !== null
+    }
+
+    static public hasNormalDnaCram(meta) {
+        return getNormalDnaCram(meta) !== null
     }
 
 
@@ -509,11 +544,11 @@ class Utils {
 
     // Status
     static public hasTumorDna(meta) {
-        return hasTumorDnaBam(meta) || hasTumorDnaMarkdupsBam(meta) || hasTumorDnaFastq(meta)
+        return hasTumorDnaBam(meta) || hasTumorDnaMarkdupsBam(meta) || hasTumorDnaFastq(meta) || hasTumorDnaCram(meta)
     }
 
     static public hasNormalDna(meta) {
-        return hasNormalDnaBam(meta) || hasNormalDnaMarkdupsBam(meta) || hasNormalDnaFastq(meta)
+        return hasNormalDnaBam(meta) || hasNormalDnaMarkdupsBam(meta) || hasNormalDnaFastq(meta) || hasNormalDnaCram(meta)
     }
 
     static public hasTumorRna(meta) {

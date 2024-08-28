@@ -59,6 +59,7 @@ include { AMBER_PROFILING       } from '../subworkflows/local/amber_profiling'
 include { BAMTOOLS_METRICS      } from '../subworkflows/local/bamtools_metrics'
 include { CHORD_PREDICTION      } from '../subworkflows/local/chord_prediction'
 include { COBALT_PROFILING      } from '../subworkflows/local/cobalt_profiling'
+include { CRAM_BAM_CONVERSION   } from '../subworkflows/local/cram_bam_conversion'
 include { CUPPA_PREDICTION      } from '../subworkflows/local/cuppa_prediction'
 include { FLAGSTAT_METRICS      } from '../subworkflows/local/flagstat_metrics'
 include { GRIDSS_SVPREP_CALLING } from '../subworkflows/local/gridss_svprep_calling'
@@ -148,6 +149,33 @@ workflow WGTS {
     }
 
     //
+    // SUBWORKFLOW: Run CRAM to BAM conversion
+    //
+    // channel: [ meta, bam, bai ]
+    ch_cram_bam_tumor_out = Channel.empty()
+    ch_cram_bam_normal_out = Channel.empty()
+    if (run_config.stages.cram_bam_conversion) {
+
+        CRAM_BAM_CONVERSION(
+            ch_inputs,
+            ref_data.genome_fasta,
+        )
+
+        ch_versions = ch_versions.mix(
+            CRAM_BAM_CONVERSION.out.versions,
+        )
+
+        ch_cram_bam_tumor_out = ch_cram_bam_tumor_out.mix(CRAM_BAM_CONVERSION.out.dna_tumor)
+        ch_cram_bam_normal_out = ch_cram_bam_normal_out.mix(CRAM_BAM_CONVERSION.out.dna_normal)
+
+    } else {
+
+        ch_cram_bam_tumor_out = ch_inputs.map { meta -> [meta, [], []] }
+        ch_cram_bam_normal_out = ch_inputs.map { meta -> [meta, [], []] }
+
+    }
+
+    //
     // SUBWORKFLOW: Run MarkDups for DNA BAMs
     //
     // channel: [ meta, bam, bai ]
@@ -155,10 +183,20 @@ workflow WGTS {
     ch_process_dna_normal_out = Channel.empty()
     if (run_config.stages.markdups) {
 
+        ch_dna_bam_tumor_ready = WorkflowOncoanalyser.selectCramBamOrAlignBam(
+            ch_cram_bam_tumor_out,
+            ch_align_dna_tumor_out,
+        )
+
+        ch_dna_bam_normal_ready = WorkflowOncoanalyser.selectCramBamOrAlignBam(
+            ch_cram_bam_normal_out,
+            ch_align_dna_normal_out,
+        )
+
         READ_PROCESSING(
             ch_inputs,
-            ch_align_dna_tumor_out,
-            ch_align_dna_normal_out,
+            ch_dna_bam_tumor_ready,
+            ch_dna_bam_normal_ready,
             ref_data.genome_fasta,
             ref_data.genome_version,
             ref_data.genome_fai,
