@@ -154,6 +154,7 @@ workflow TARGETED {
         CRAM_BAM_CONVERSION(
             ch_inputs,
             ref_data.genome_fasta,
+            ref_data.genome_fai,
         )
 
         ch_versions = ch_versions.mix(
