@@ -10,10 +10,11 @@ include { CUSTOM_CRAM_BAM_CONVERT as CRAM_BAM_CONVERT } from '../../../modules/l
 workflow CRAM_BAM_CONVERSION {
     take:
     // Sample data
-    ch_inputs              // channel: [mandatory] [ meta ]
+    ch_inputs    // channel: [mandatory] [ meta ]
 
     // Reference data
-    genome_fasta           // channel: [mandatory] /path/to/genome_fasta
+    genome_fasta // channel: [mandatory] /path/to/genome_fasta
+    genome_fai   // channel: [mandatory] /path/to/genome_fai
 
     main:
     // Channel for version.yml files
@@ -63,6 +64,7 @@ workflow CRAM_BAM_CONVERSION {
     CRAM_BAM_CONVERT(
         ch_cram_inputs,
         genome_fasta,
+        genome_fai,
     )
 
     // Combine BAM and BAI then sort into tumor and normal channels

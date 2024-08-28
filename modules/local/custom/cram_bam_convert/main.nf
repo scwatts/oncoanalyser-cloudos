@@ -2,14 +2,15 @@ process CUSTOM_CRAM_BAM_CONVERT {
     tag "${meta.id}"
     label 'process_single'
 
-    conda (params.enable_conda ? "bioconda::samtools=1.16.1" : null)
+    conda (params.enable_conda ? "bioconda::samtools=1.19.2" : null)
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/samtools:1.16.1--h6899075_1' :
-        'biocontainers/samtools:1.16.1--h6899075_1' }"
+        'https://depot.galaxyproject.org/singularity/samtools:1.19.2--h50ea8bc_1' :
+        'biocontainers/samtools:1.19.2--h50ea8bc_1' }"
 
     input:
     tuple val(meta), path(cram)
     path genome_fasta
+    path genome_fai
 
     output:
     tuple val(meta), path("*bam"), emit: bam
@@ -23,7 +24,8 @@ process CUSTOM_CRAM_BAM_CONVERT {
     def args = task.ext.args ?: ''
 
     """
-    samtools view --write-index --reference ${genome_fasta} -O ${cram.baseName}.bam ${cram}
+    samtools view --threads ${task.cpus} --reference ${genome_fasta} --output ${cram.baseName}.bam ${cram}
+    samtools index --threads ${task.cpus} ${cram.baseName}.bam
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
