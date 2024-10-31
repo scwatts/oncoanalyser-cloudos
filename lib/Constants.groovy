@@ -57,7 +57,7 @@ class Constants {
         // Generic
         BAI,
         BAM,
-        BAM_MARKDUPS,
+        BAM_REDUX,
         CRAI,
         CRAM,
         FASTQ,
