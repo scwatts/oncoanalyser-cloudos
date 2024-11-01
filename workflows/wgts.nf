@@ -207,6 +207,7 @@ workflow WGTS {
             ch_inputs,
             ch_dna_bam_tumor_ready,
             ch_dna_bam_normal_ready,
+            ch_align_dna_donor_out,
             ref_data.genome_fasta,
             ref_data.genome_version,
             ref_data.genome_fai,
