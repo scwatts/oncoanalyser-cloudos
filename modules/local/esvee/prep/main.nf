@@ -45,7 +45,7 @@ process ESVEE_PREP {
     SAMBAMBA_PATH=\$(which sambamba)
 
     esvee com.hartwig.hmftools.esvee.prep.PrepApplication \\
-        -Xmx${Math.round(task.memory.bytes * 0.75)} \\
+        -Xmx${Math.round(task.memory.bytes * 0.50)} \\
         ${args} \\
         -sample "${sample_ids_string}" \\
         -bam_file "${bam_files_string}" \\
