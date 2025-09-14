@@ -117,6 +117,24 @@ class Utils {
                         Nextflow.exit(1)
                     }
 
+                    // Set meta[(filetype, convert_flag)]
+                    // Require CRAM when CRAM_TO_FASTQ_CONVERSION is set
+                    if (info_data.containsKey(Constants.InfoField.CRAM_TO_FASTQ_CONVERSION)) {
+
+                        if (filetype_enum !== Constants.FileType.CRAM) {
+                            log.error "must provide CRAM when converting to FASTQ for ${group_id} ${sample_type_enum}/${sequence_type_enum}: ${filetype_enum}"
+                            Nextflow.exit(1)
+                        }
+
+                        if (sequence_type_enum === Constants.SequenceType.RNA) {
+                            log.error "conversion of RNA CRAM not supported: ${group_id} ${sample_type_enum}/${sequence_type_enum}"
+                            Nextflow.exit(1)
+                        }
+
+                        meta_sample[[filetype_enum, Constants.InfoField.CRAM_TO_FASTQ_CONVERSION]] = true
+
+                    }
+
                     // Handle inputs appropriately
                     if (filetype_enum === Constants.FileType.FASTQ) {
 
@@ -382,6 +400,12 @@ class Utils {
                     Nextflow.exit(1)
                 }
 
+            }
+
+            // Do not allow donor sample for this version
+            if (Utils.hasDonorDna(meta)) {
+                log.error "input donor samples are not supported in this version"
+                Nextflow.exit(1)
             }
 
             // Do not allow donor sample without normal sample
@@ -710,6 +734,25 @@ class Utils {
 
 
     // Misc
+    static public hasTumorCramConvertDna(meta) {
+        def meta_sample = getTumorDnaSample(meta)
+        return hasCramConvertDna(meta_sample)
+    }
+
+    static public hasNormalCramConvertDna(meta) {
+        def meta_sample = getNormalDnaSample(meta)
+        return hasCramConvertDna(meta_sample)
+    }
+
+    static public hasDonorCramConvertDna(meta) {
+        def meta_sample = getDonorDnaSample(meta)
+        return hasCramConvertDna(meta_sample)
+    }
+
+    static public hasCramConvertDna(meta_sample) {
+        return meta_sample.getOrDefault([Constants.FileType.CRAM, Constants.InfoField.CRAM_TO_FASTQ_CONVERSION], false)
+    }
+
     public static getInput(meta, key) {
 
         def result = []

@@ -133,6 +133,7 @@ class Constants {
 
     static enum InfoField {
         CANCER_TYPE,
+        CRAM_TO_FASTQ_CONVERSION,
         LANE,
         LIBRARY_ID,
         LONGITUDINAL_SAMPLE,
@@ -142,6 +143,26 @@ class Constants {
     static List PLACEHOLDER_OPTIONAL_CHANNEL = []
 
     static Map INPUT = [
+
+        // FASTQ
+        FASTQ_DNA_TUMOR: [
+            FileType.FASTQ,
+            SampleType.TUMOR,
+            SequenceType.DNA,
+        ],
+
+        FASTQ_DNA_NORMAL: [
+            FileType.FASTQ,
+            SampleType.NORMAL,
+            SequenceType.DNA,
+        ],
+
+        FASTQ_DNA_DONOR: [
+            FileType.FASTQ,
+            SampleType.DONOR,
+            SequenceType.DNA,
+        ],
+
 
         // Bams
         BAM_DNA_TUMOR: [
