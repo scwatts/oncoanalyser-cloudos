@@ -21,17 +21,24 @@ process SAMTOOLS_FASTQ {
 
     script:
     def args = task.ext.args ?: ''
+    def args2 = task.ext.args2 ?: ''
 
     """
-    samtools fastq \\
+    samtools collate \\
         ${args} \\
-        -0 ${meta.id}.other.fastq.gz \\
-        -1 ${meta.id}.R1.fastq.gz \\
-        -2 ${meta.id}.R2.fastq.gz \\
-        -s ${meta.id}.singleton.fastq.gz \\
+        -O \\
+        -u \\
         --reference ${genome_fasta} \\
         --threads ${task.cpus} \\
-        ${cram}
+        ${cram} | \\
+        \\
+        samtools fastq \\
+            ${args2} \\
+            -0 ${meta.id}.other.fastq.gz \\
+            -1 ${meta.id}.R1.fastq.gz \\
+            -2 ${meta.id}.R2.fastq.gz \\
+            -s ${meta.id}.singleton.fastq.gz \\
+            --threads ${task.cpus}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
