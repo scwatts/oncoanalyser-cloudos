@@ -25,8 +25,10 @@ process SAMTOOLS_FASTQ {
     """
     samtools fastq \\
         ${args} \\
+        -0 ${meta.id}.other.fastq.gz \\
         -1 ${meta.id}.R1.fastq.gz \\
         -2 ${meta.id}.R2.fastq.gz \\
+        -s ${meta.id}.singleton.fastq.gz \\
         --threads ${task.cpus} \\
         ${cram}
 
