@@ -29,6 +29,7 @@ process SAMTOOLS_FASTQ {
         -1 ${meta.id}.R1.fastq.gz \\
         -2 ${meta.id}.R2.fastq.gz \\
         -s ${meta.id}.singleton.fastq.gz \\
+        --reference ${genome_fasta} \\
         --threads ${task.cpus} \\
         ${cram}
 
