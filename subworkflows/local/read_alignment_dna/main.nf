@@ -36,8 +36,9 @@ workflow READ_ALIGNMENT_DNA {
     // channel: [ meta ]
     ch_inputs_tumor_sorted = ch_dna_tumor
         .branch { meta, fastq_fwd, fastq_rev ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_TUMOR)
-            def has_input = Utils.hasTumorDnaFastq(meta) || Utils.hasTumorCramConvertDna(meta)
+            def cram_convert = Utils.hasTumorCramConvertDna(meta)
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_TUMOR) && !cram_convert
+            def has_input = Utils.hasTumorDnaFastq(meta) || cram_convert
             runnable: has_input && !has_existing
             skip: true
                 return meta
@@ -45,8 +46,9 @@ workflow READ_ALIGNMENT_DNA {
 
     ch_inputs_normal_sorted = ch_dna_normal
         .branch { meta, fastq_fwd, fastq_rev ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL)
-            def has_input = Utils.hasNormalDnaFastq(meta) || Utils.hasNormalCramConvertDna(meta)
+            def cram_convert = Utils.hasNormalCramConvertDna(meta)
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL) && !cram_convert
+            def has_input = Utils.hasNormalDnaFastq(meta) || cram_convert
             runnable: has_input && !has_existing
             skip: true
                 return meta
@@ -54,8 +56,9 @@ workflow READ_ALIGNMENT_DNA {
 
     ch_inputs_donor_sorted = ch_dna_donor
         .branch { meta, fastq_fwd, fastq_rev ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR)
-            def has_input = Utils.hasDonorDnaFastq(meta) || Utils.hasDonorCramConvertDna(meta)
+            def cram_convert = Utils.hasDonorCramConvertDna(meta)
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR) && !cram_convert
+            def has_input = Utils.hasDonorDnaFastq(meta) || cram_convert
             runnable: has_input && !has_existing
             skip: true
                 return meta
@@ -84,7 +87,7 @@ workflow READ_ALIGNMENT_DNA {
                     sample_type: sample_type,
                 ]
 
-                return [meta_fastq, fastq_fwd, fastq_rev]
+                return [[meta_fastq, fastq_fwd, fastq_rev]]
 
             } else {
 
