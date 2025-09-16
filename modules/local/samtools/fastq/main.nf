@@ -13,6 +13,7 @@ process SAMTOOLS_FASTQ {
 
     output:
     tuple val(meta), path('*R1.fastq.gz'), path('*R2.fastq.gz'), emit: fastq
+    path '*.fastq.gz'                                          , emit: fastq_all
     path 'versions.yml'                                        , emit: versions
     path '.command.*'                                          , emit: command_files
 
