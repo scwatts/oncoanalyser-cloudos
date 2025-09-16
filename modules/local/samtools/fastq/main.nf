@@ -1,6 +1,7 @@
 process SAMTOOLS_FASTQ {
     tag "${meta.id}"
     label 'process_single'
+    label 'process_medium_memory'
 
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/samtools:1.22.1--h96c455f_0' :
