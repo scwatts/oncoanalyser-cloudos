@@ -117,9 +117,18 @@ process ORANGE {
 
     fi
 
-    # Set input plot directory and create it doesn't exist. See the LINX visualiser module for further info.
+    # NOTE(SW): when running on CloudOS and there are no reportable plots, the plot_dir is not
+    # present but creating an empty placeholder directory fails since inputs are read-only
+
+    ## Set input plot directory and create it doesn't exist. See the LINX visualiser module for further info.
+    #if [[ ! -e ${plot_dir}/ ]]; then
+    #    mkdir -p ${plot_dir}/;
+    #fi;
+
+    plot_dir__prepared=${plot_dir}
     if [[ ! -e ${plot_dir}/ ]]; then
-        mkdir -p ${plot_dir}/;
+        plot_dir__prepared=plot_dir__prepared;
+        mkdir -p \${plot_dir__prepared}/;
     fi;
 
     mkdir -p output/
@@ -138,7 +147,7 @@ process ORANGE {
         -purple_dir \${purple_dir_local} \\
         -purple_plot_dir \${purple_dir_local}/plot/ \\
         -linx_dir ${linx_somatic_anno_dir} \\
-        -linx_plot_dir ${plot_dir}/ \\
+        -linx_plot_dir \${plot_dir__prepared}/ \\
         ${virus_dir_arg} \\
         ${lilac_dir_arg} \\
         ${chord_dir_arg} \\
