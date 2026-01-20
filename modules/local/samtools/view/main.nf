@@ -1,4 +1,4 @@
-process SAMTOOLS_FASTQ {
+process SAMTOOLS_VIEW {
     tag "${meta.id}"
     label 'process_single'
     label 'process_medium_memory'
@@ -13,10 +13,9 @@ process SAMTOOLS_FASTQ {
     path genome_fai
 
     output:
-    tuple val(meta), path('*R1.fastq.gz'), path('*R2.fastq.gz'), emit: fastq
-    path '*.fastq.gz'                                          , emit: fastq_all
-    path 'versions.yml'                                        , emit: versions
-    path '.command.*'                                          , emit: command_files
+    tuple val(meta), path('*.bam'), path('*.bai'), emit: fastq
+    path 'versions.yml'                          , emit: versions
+    path '.command.*'                            , emit: command_files
 
     when:
     task.ext.when == null || task.ext.when
@@ -26,21 +25,14 @@ process SAMTOOLS_FASTQ {
     def args2 = task.ext.args2 ?: ''
 
     """
-    samtools collate \\
+    samtools view \\
         ${args} \\
-        -O \\
-        -u \\
+        --bam \\
         --reference ${genome_fasta} \\
         --threads ${task.cpus} \\
-        ${cram} | \\
-        \\
-        samtools fastq \\
-            ${args2} \\
-            -0 ${meta.id}.other.fastq.gz \\
-            -1 ${meta.id}.R1.fastq.gz \\
-            -2 ${meta.id}.R2.fastq.gz \\
-            -s ${meta.id}.singleton.fastq.gz \\
-            --threads ${task.cpus}
+        --write-index \\
+        --output ${meta.id}.bam \\
+        ${cram}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -50,8 +42,8 @@ process SAMTOOLS_FASTQ {
 
     stub:
     """
-    touch ${meta.id}.R1.fastq.gz
-    touch ${meta.id}.R2.fastq.gz
+    touch ${meta.id}.bam
+    touch ${meta.id}.bai
 
     echo -e '${task.process}:\\n  stub: noversions\\n' > versions.yml
     """

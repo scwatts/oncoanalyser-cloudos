@@ -1,20 +1,20 @@
 //
-// Convert CRAM to FASTQ
+// Convert CRAM to BAM
 //
 
 import Constants
 import Utils
 
-include { SAMTOOLS_FASTQ } from '../../../modules/local/samtools/fastq'
+include { SAMTOOLS_VIEW } from '../../../modules/local/samtools/view'
 
-workflow CRAM_TO_FASTQ {
+workflow CRAM_TO_BAM {
     take:
     // Sample data
-    ch_inputs        // channel: [mandatory] [ meta ]
+    ch_inputs    // channel: [mandatory] [ meta ]
 
     // Reference data
-    genome_fasta     // channel: [mandatory] /path/to/genome_fasta
-    genome_fai       // channel: [mandatory] /path/to/genome_fai
+    genome_fasta // channel: [mandatory] /path/to/genome_fasta
+    genome_fai   // channel: [mandatory] /path/to/genome_fai
 
     main:
     // Channel for version.yml files
@@ -33,8 +33,7 @@ workflow CRAM_TO_FASTQ {
             ]
         }
         .branch { meta, crams, crais ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.FASTQ_DNA_TUMOR)
-            runnable: crams && !has_existing
+            runnable: crams
             skip: true
                 return meta
         }
@@ -48,8 +47,7 @@ workflow CRAM_TO_FASTQ {
             ]
         }
         .branch { meta, crams, crais ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.FASTQ_DNA_NORMAL)
-            runnable: crams && !has_existing
+            runnable: crams
             skip: true
                 return meta
         }
@@ -63,8 +61,7 @@ workflow CRAM_TO_FASTQ {
             ]
         }
         .branch { meta, crams, crais ->
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.FASTQ_DNA_DONOR)
-            runnable: crams && !has_existing
+            runnable: crams
             skip: true
             return meta
         }
@@ -92,17 +89,17 @@ workflow CRAM_TO_FASTQ {
         }
 
     // Run process
-    SAMTOOLS_FASTQ(
+    SAMTOOLS_VIEW(
         ch_samtools_inputs,
         genome_fasta,
         genome_fai,
     )
 
-    ch_versions = ch_versions.mix(SAMTOOLS_FASTQ.out.versions)
+    ch_versions = ch_versions.mix(SAMTOOLS_VIEW.out.versions)
 
     // Sort into a tumor and normal channel
     // channel: [ meta_samtools, cram, crai ]
-    ch_samtools_out_sorted = SAMTOOLS_FASTQ.out.fastq
+    ch_samtools_out_sorted = SAMTOOLS_VIEW.out.fastq
         .branch { meta_samtools, fastq_fwd, fastq_rev ->
             assert ['tumor', 'normal', 'donor'].contains(meta_samtools.sample_type)
             tumor: meta_samtools.sample_type == 'tumor'
@@ -112,7 +109,7 @@ workflow CRAM_TO_FASTQ {
         }
 
     // Set outputs, restoring original meta
-    // channel: [ meta, fastq_fwd, fastq_rev ]
+    // channel: [ meta, bam, bai]
     ch_samtools_tumor_out = Channel.empty()
         .mix(
             WorkflowOncoanalyser.restoreMeta(ch_samtools_out_sorted.tumor, ch_inputs),
@@ -132,9 +129,9 @@ workflow CRAM_TO_FASTQ {
         )
 
     emit:
-    dna_tumor  = ch_samtools_tumor_out  // channel: [ meta, fastq_fwd, fastq_rev ]
-    dna_normal = ch_samtools_normal_out // channel: [ meta, fastq_fwd, fastq_rev ]
-    dna_donor  = ch_samtools_donor_out  // channel: [ meta, fastq_fwd, fastq_rev ]
+    dna_tumor  = ch_samtools_tumor_out  // channel: [ meta, bam, bai ]
+    dna_normal = ch_samtools_normal_out // channel: [ meta, bam, bai ]
+    dna_donor  = ch_samtools_donor_out  // channel: [ meta, bam, bai ]
 
     versions   = ch_versions            // channel: [ versions.yml ]
 }

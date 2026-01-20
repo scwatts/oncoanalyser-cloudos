@@ -10,10 +10,13 @@ include { REDUX } from '../../../modules/local/redux/main'
 workflow REDUX_PROCESSING {
     take:
     // Sample data
-    ch_inputs        // channel: [mandatory] [ meta ]
-    ch_dna_tumor     // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
-    ch_dna_normal    // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
-    ch_dna_donor     // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_inputs           // channel: [mandatory] [ meta ]
+    ch_dna_tumor_align  // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_normal_align // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_donor_align  // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_tumor_conv   // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_normal_conv  // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_donor_conv   // channel: [mandatory] [ meta, [bam, ...], [bai, ...] ]
 
     // Reference data
     genome_fasta     // channel: [mandatory] /path/to/genome_fasta
@@ -32,10 +35,10 @@ workflow REDUX_PROCESSING {
     // channel: [ versions.yml ]
     ch_versions = Channel.empty()
 
-    // Select and sort input sources, separating bytumor and normal
-    // channel: runnable: [ meta, [bam, ...], [bai, ...] ]
-    // channel: skip: [ meta ]
-    ch_inputs_tumor_sorted = ch_dna_tumor
+    // Select inputs; always prefer converted CRAMs to aligned BAMs
+    // channel: [ meta, [bam, ...], [bai, ...] ]
+    ch_dna_tumor_align_selected = ch_dna_tumor_align
+    ch_dna_tumor_align_selected = ch_dna_tumor_align
         .map { meta, bams, bais ->
             return [
                 meta,
@@ -43,6 +46,60 @@ workflow REDUX_PROCESSING {
                 Utils.hasExistingInput(meta, Constants.INPUT.BAI_DNA_TUMOR) && !Utils.hasTumorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAI_DNA_TUMOR)] : bais,
             ]
         }
+
+    ch_dna_tumor_selected = WorkflowOncoanalyser.groupByMeta(
+        ch_dna_tumor_align_selected,
+        ch_dna_tumor_conv,
+    )
+      . map { meta, align_bams, align_bais, conv_bam, conv_bai ->
+          def bams = conv_bam ? [conv_bam] : align_bams
+          def bais = conv_bai ? [conv_bai] : align_bais
+          return [meta, bams, bais]
+      }
+
+
+    ch_dna_normal_align_selected = ch_dna_normal_align
+        .map { meta, bams, bais ->
+            return [
+                meta,
+                Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL) && !Utils.hasTumorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAM_DNA_NORMAL)] : bams,
+                Utils.hasExistingInput(meta, Constants.INPUT.BAI_DNA_NORMAL) && !Utils.hasTumorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAI_DNA_NORMAL)] : bais,
+            ]
+        }
+
+    ch_dna_normal_selected = WorkflowOncoanalyser.groupByMeta(
+        ch_dna_normal_align_selected,
+        ch_dna_normal_conv,
+    )
+      . map { meta, align_bams, align_bais, conv_bam, conv_bai ->
+          def bams = conv_bam ? [conv_bam] : align_bams
+          def bais = conv_bai ? [conv_bai] : align_bais
+          return [meta, bams, bais]
+      }
+
+    ch_dna_donor_align_selected = ch_dna_donor_align
+        .map { meta, bams, bais ->
+            return [
+                meta,
+                Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR) && !Utils.hasTumorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAM_DNA_DONOR)] : bams,
+                Utils.hasExistingInput(meta, Constants.INPUT.BAI_DNA_DONOR) && !Utils.hasTumorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAI_DNA_DONOR)] : bais,
+            ]
+        }
+
+    ch_dna_donor_selected = WorkflowOncoanalyser.groupByMeta(
+        ch_dna_donor_align_selected,
+        ch_dna_donor_conv,
+    )
+      . map { meta, align_bams, align_bais, conv_bam, conv_bai ->
+          def bams = conv_bam ? [conv_bam] : align_bams
+          def bais = conv_bai ? [conv_bai] : align_bais
+          return [meta, bams, bais]
+      }
+
+    // Select and sort input sources, separating bytumor and normal
+    // channel: runnable: [ meta, [bam, ...], [bai, ...] ]
+    // channel: skip: [ meta ]
+    ch_inputs_tumor_sorted = ch_dna_tumor_selected
         .branch { meta, bams, bais ->
             def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_REDUX_DNA_TUMOR)
             runnable: bams && !has_existing
@@ -50,14 +107,7 @@ workflow REDUX_PROCESSING {
                 return meta
         }
 
-    ch_inputs_normal_sorted = ch_dna_normal
-        .map { meta, bams, bais ->
-            return [
-                meta,
-                Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL) && !Utils.hasNormalCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAM_DNA_NORMAL)] : bams,
-                Utils.hasExistingInput(meta, Constants.INPUT.BAI_DNA_NORMAL) && !Utils.hasNormalCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAI_DNA_NORMAL)] : bais,
-            ]
-        }
+    ch_inputs_normal_sorted = ch_dna_normal_selected
         .branch { meta, bams, bais ->
             def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_REDUX_DNA_NORMAL)
             runnable: bams && !has_existing
@@ -65,14 +115,7 @@ workflow REDUX_PROCESSING {
                 return meta
         }
 
-    ch_inputs_donor_sorted = ch_dna_donor
-        .map { meta, bams, bais ->
-            return [
-                meta,
-                Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR) && !Utils.hasDonorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAM_DNA_DONOR)] : bams,
-                Utils.hasExistingInput(meta, Constants.INPUT.BAI_DNA_DONOR) && !Utils.hasDonorCramConvertDna(meta) ? [Utils.getInput(meta, Constants.INPUT.BAI_DNA_DONOR)] : bais,
-            ]
-        }
+    ch_inputs_donor_sorted = ch_dna_donor_selected
         .branch { meta, bams, bais ->
             def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_REDUX_DNA_DONOR)
             runnable: bams && !has_existing

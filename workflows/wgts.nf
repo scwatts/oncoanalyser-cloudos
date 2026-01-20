@@ -13,7 +13,7 @@ include { BAMTOOLS_METRICS      } from '../subworkflows/local/bamtools_metrics'
 include { CHORD_PREDICTION      } from '../subworkflows/local/chord_prediction'
 include { CIDER_CALLING         } from '../subworkflows/local/cider_calling'
 include { COBALT_PROFILING      } from '../subworkflows/local/cobalt_profiling'
-include { CRAM_TO_FASTQ         } from '../subworkflows/local/cram_to_fastq'
+include { CRAM_TO_BAM           } from '../subworkflows/local/cram_to_bam'
 include { CUPPA_PREDICTION      } from '../subworkflows/local/cuppa_prediction'
 include { ESVEE_CALLING         } from '../subworkflows/local/esvee_calling'
 include { ISOFOX_QUANTIFICATION } from '../subworkflows/local/isofox_quantification'
@@ -86,35 +86,6 @@ workflow WGTS {
     gridss_config = params.gridss_config !== null ? file(params.gridss_config) : hmf_data.gridss_config
 
     //
-    // SUBWORKFLOW: Convert CRAM to FASTQ
-    //
-    // channel: [ meta, fastq_fwd, fastq_rev ]
-    ch_fastq_dna_tumor_out = Channel.empty()
-    ch_fastq_dna_normal_out = Channel.empty()
-    ch_fastq_dna_donor_out = Channel.empty()
-    if (run_config.stages.alignment) {
-
-        CRAM_TO_FASTQ(
-            ch_inputs,
-            ref_data.genome_fasta,
-            ref_data.genome_fai,
-        )
-
-        ch_versions = ch_versions.mix(CRAM_TO_FASTQ.out.versions)
-
-        ch_fastq_dna_tumor_out = ch_fastq_dna_tumor_out.mix(CRAM_TO_FASTQ.out.dna_tumor)
-        ch_fastq_dna_normal_out = ch_fastq_dna_normal_out.mix(CRAM_TO_FASTQ.out.dna_normal)
-        ch_fastq_dna_donor_out = ch_fastq_dna_donor_out.mix(CRAM_TO_FASTQ.out.dna_donor)
-
-    } else {
-
-        ch_fastq_dna_tumor_out = ch_inputs.map { meta -> [meta, [], []] }
-        ch_fastq_dna_normal_out = ch_inputs.map { meta -> [meta, [], []] }
-        ch_fastq_dna_donor_out = ch_inputs.map { meta -> [meta, [], []] }
-
-    }
-
-    //
     // SUBWORKFLOW: Run read alignment to generate BAMs
     //
     // channel: [ meta, [bam, ...], [bai, ...] ]
@@ -126,9 +97,6 @@ workflow WGTS {
 
         READ_ALIGNMENT_DNA(
             ch_inputs,
-            ch_fastq_dna_tumor_out,
-            ch_fastq_dna_normal_out,
-            ch_fastq_dna_donor_out,
             ref_data.genome_fasta,
             ref_data.genome_bwamem2_index,
             params.max_fastq_records,
@@ -163,6 +131,26 @@ workflow WGTS {
     }
 
     //
+    // SUBWORKFLOW: Convert CRAM to BAM for compatibility if requested
+    //
+    // channel: [ meta, bam, bai ]
+    ch_bam_dna_tumor_out = Channel.empty()
+    ch_bam_dna_normal_out = Channel.empty()
+    ch_bam_dna_donor_out = Channel.empty()
+
+    CRAM_TO_BAM(
+        ch_inputs,
+        ref_data.genome_fasta,
+        ref_data.genome_fai,
+    )
+
+    ch_versions = ch_versions.mix(CRAM_TO_BAM.out.versions)
+
+    ch_bam_dna_tumor_out = ch_bam_dna_tumor_out.mix(CRAM_TO_BAM.out.dna_tumor)
+    ch_bam_dna_normal_out = ch_bam_dna_normal_out.mix(CRAM_TO_BAM.out.dna_normal)
+    ch_bam_dna_donor_out = ch_bam_dna_donor_out.mix(CRAM_TO_BAM.out.dna_donor)
+
+    //
     // SUBWORKFLOW: Run REDUX for DNA BAMs
     //
     // channel: [ meta, bam, bai ]
@@ -182,6 +170,9 @@ workflow WGTS {
             ch_align_dna_tumor_out,
             ch_align_dna_normal_out,
             ch_align_dna_donor_out,
+            ch_bam_dna_tumor_out,
+            ch_bam_dna_normal_out,
+            ch_bam_dna_donor_out,
             ref_data.genome_fasta,
             ref_data.genome_version,
             ref_data.genome_fai,

@@ -133,7 +133,7 @@ class Constants {
 
     static enum InfoField {
         CANCER_TYPE,
-        CRAM_TO_FASTQ_CONVERSION,
+        CRAM_TO_BAM_CONVERSION,
         LANE,
         LIBRARY_ID,
         LONGITUDINAL_SAMPLE,

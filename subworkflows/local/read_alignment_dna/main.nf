@@ -12,9 +12,6 @@ workflow READ_ALIGNMENT_DNA {
     take:
     // Sample data
     ch_inputs            // channel: [mandatory] [ meta ]
-    ch_dna_tumor         // channel: [mandatory] [ meta, fastq_fwd, fastq_rev ]
-    ch_dna_normal        // channel: [mandatory] [ meta, fastq_fwd, fastq_rev ]
-    ch_dna_donor         // channel: [mandatory] [ meta, fastq_fwd, fastq_rev ]
 
     // Reference data
     genome_fasta         // channel: [mandatory] /path/to/genome_fasta
@@ -34,83 +31,54 @@ workflow READ_ALIGNMENT_DNA {
 
     // Sort inputs, separate by tumor and normal
     // channel: [ meta ]
-    ch_inputs_tumor_sorted = ch_dna_tumor
-        .branch { meta, fastq_fwd, fastq_rev ->
-            def cram_convert = Utils.hasTumorCramConvertDna(meta)
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_TUMOR) && !cram_convert
-            def has_input = Utils.hasTumorDnaFastq(meta) || cram_convert
-            runnable: has_input && !has_existing
+    ch_inputs_tumor_sorted = ch_inputs
+        .branch { meta ->
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_TUMOR)
+            runnable: Utils.hasTumorDnaFastq(meta) && !has_existing
             skip: true
-                return meta
         }
 
-    ch_inputs_normal_sorted = ch_dna_normal
-        .branch { meta, fastq_fwd, fastq_rev ->
-            def cram_convert = Utils.hasNormalCramConvertDna(meta)
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL) && !cram_convert
-            def has_input = Utils.hasNormalDnaFastq(meta) || cram_convert
-            runnable: has_input && !has_existing
+    ch_inputs_normal_sorted = ch_inputs
+        .branch { meta ->
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_NORMAL)
+            runnable: Utils.hasNormalDnaFastq(meta) && !has_existing
             skip: true
-                return meta
         }
 
-    ch_inputs_donor_sorted = ch_dna_donor
-        .branch { meta, fastq_fwd, fastq_rev ->
-            def cram_convert = Utils.hasDonorCramConvertDna(meta)
-            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR) && !cram_convert
-            def has_input = Utils.hasDonorDnaFastq(meta) || cram_convert
-            runnable: has_input && !has_existing
+    ch_inputs_donor_sorted = ch_inputs
+        .branch { meta ->
+            def has_existing = Utils.hasExistingInput(meta, Constants.INPUT.BAM_DNA_DONOR)
+            runnable: Utils.hasDonorDnaFastq(meta) && !has_existing
             skip: true
-                return meta
         }
 
     // Create FASTQ input channel
     // channel: [ meta_fastq, fastq_fwd, fastq_rev ]
     ch_fastq_inputs = Channel.empty()
         .mix(
-            ch_inputs_tumor_sorted.runnable.map { meta, fastq_fwd, fastq_rev -> [meta, fastq_fwd, fastq_rev, Utils.getTumorDnaSample(meta), 'tumor'] },
-            ch_inputs_normal_sorted.runnable.map { meta, fastq_fwd, fastq_rev -> [meta, fastq_fwd, fastq_rev, Utils.getNormalDnaSample(meta), 'normal'] },
-            ch_inputs_donor_sorted.runnable.map { meta, fastq_fwd, fastq_rev -> [meta, fastq_fwd, fastq_rev, Utils.getDonorDnaSample(meta), 'donor'] },
+            ch_inputs_tumor_sorted.runnable.map { meta -> [meta, Utils.getTumorDnaSample(meta), 'tumor'] },
+            ch_inputs_normal_sorted.runnable.map { meta -> [meta, Utils.getNormalDnaSample(meta), 'normal'] },
+            ch_inputs_donor_sorted.runnable.map { meta -> [meta, Utils.getDonorDnaSample(meta), 'donor'] },
         )
-        .flatMap { meta, fastq_fwd, fastq_rev, meta_sample, sample_type ->
+        .flatMap { meta, meta_sample, sample_type ->
+            meta_sample
+                .getAt(Constants.FileType.FASTQ)
+                .collect { key, fps ->
+                    def (library_id, lane) = key
 
-            if (Utils.hasCramConvertDna(meta_sample)) {
+                    def sample_id = meta_sample.getOrDefault('longitudinal_sample_id', meta_sample['sample_id'])
 
-                def sample_id = meta_sample['sample_id']
+                    def meta_fastq = [
+                        key: meta.group_id,
+                        id: "${meta.group_id}_${sample_id}",
+                        sample_id: sample_id,
+                        library_id: library_id,
+                        lane: lane,
+                        sample_type: sample_type,
+                    ]
 
-                def meta_fastq = [
-                    key: meta.group_id,
-                    id: "${meta.group_id}_${sample_id}",
-                    sample_id: sample_id,
-                    library_id: 'cram_converted_library',
-                    lane: '001',
-                    sample_type: sample_type,
-                ]
-
-                return [[meta_fastq, fastq_fwd, fastq_rev]]
-
-            } else {
-
-                return meta_sample
-                    .getAt(Constants.FileType.FASTQ)
-                    .collect { key, fps ->
-                        def (library_id, lane) = key
-
-                        def sample_id = meta_sample.getOrDefault('longitudinal_sample_id', meta_sample['sample_id'])
-
-                        def meta_fastq = [
-                            key: meta.group_id,
-                            id: "${meta.group_id}_${sample_id}",
-                            sample_id: sample_id,
-                            library_id: library_id,
-                            lane: lane,
-                            sample_type: sample_type,
-                        ]
-
-                        return [meta_fastq, fps['fwd'], fps['rev']]
-                    }
-
-            }
+                    return [meta_fastq, fps['fwd'], fps['rev']]
+                }
         }
 
     //

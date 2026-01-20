@@ -118,11 +118,11 @@ class Utils {
                     }
 
                     // Set meta[(filetype, convert_flag)]
-                    // Require CRAM when CRAM_TO_FASTQ_CONVERSION is set
-                    if (info_data.containsKey(Constants.InfoField.CRAM_TO_FASTQ_CONVERSION)) {
+                    // Require CRAM when CRAM_TO_BAM_CONVERSION is set
+                    if (info_data.containsKey(Constants.InfoField.CRAM_TO_BAM_CONVERSION)) {
 
                         if (filetype_enum !== Constants.FileType.CRAM) {
-                            log.error "must provide CRAM when converting to FASTQ for ${group_id} ${sample_type_enum}/${sequence_type_enum}: ${filetype_enum}"
+                            log.error "must provide CRAM when converting to BAM for ${group_id} ${sample_type_enum}/${sequence_type_enum}: ${filetype_enum}"
                             Nextflow.exit(1)
                         }
 
@@ -131,7 +131,7 @@ class Utils {
                             Nextflow.exit(1)
                         }
 
-                        meta_sample[[filetype_enum, Constants.InfoField.CRAM_TO_FASTQ_CONVERSION]] = true
+                        meta_sample[[filetype_enum, Constants.InfoField.CRAM_TO_BAM_CONVERSION]] = true
 
                     }
 
@@ -750,7 +750,7 @@ class Utils {
     }
 
     static public hasCramConvertDna(meta_sample) {
-        return meta_sample.getOrDefault([Constants.FileType.CRAM, Constants.InfoField.CRAM_TO_FASTQ_CONVERSION], false)
+        return meta_sample.getOrDefault([Constants.FileType.CRAM, Constants.InfoField.CRAM_TO_BAM_CONVERSION], false)
     }
 
     public static getInput(meta, key) {
