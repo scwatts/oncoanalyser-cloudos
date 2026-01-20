@@ -30,9 +30,10 @@ process SAMTOOLS_VIEW {
         --bam \\
         --reference ${genome_fasta} \\
         --threads ${task.cpus} \\
-        --write-index \\
         --output ${meta.id}.bam \\
         ${cram}
+
+    samtools index --threads ${task.cpus} ${meta.id}.bam
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
