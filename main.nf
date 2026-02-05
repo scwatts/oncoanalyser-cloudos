@@ -58,10 +58,10 @@ if (workflow.stubRun && params.create_stub_placeholders) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PANEL_RESOURCE_CREATION } from './workflows/panel_resource_creation'
-include { PREPARE_REFERENCE       } from './workflows/prepare_reference'
-include { PURITY_ESTIMATE         } from './workflows/purity_estimate'
-include { TARGETED                } from './workflows/targeted'
+//include { PANEL_RESOURCE_CREATION } from './workflows/panel_resource_creation'
+//include { PREPARE_REFERENCE       } from './workflows/prepare_reference'
+//include { PURITY_ESTIMATE         } from './workflows/purity_estimate'
+//include { TARGETED                } from './workflows/targeted'
 include { WGTS                    } from './workflows/wgts'
 
 /*
@@ -89,15 +89,19 @@ workflow NFCORE_ONCOANALYSER {
         run_config = WorkflowMain.getRunConfig(params, inputs, log)
         Utils.validateInput(inputs, run_config, params, log)
 
+
+        // NOTE(SW): all but the WGTS workflow have been disabled since fix mate information isn't implemented elsewhere
+
+
         // Run requested workflow
         if (run_mode === Constants.RunMode.WGTS) {
             WGTS(inputs, run_config)
-        } else if (run_mode === Constants.RunMode.TARGETED) {
-            TARGETED(inputs, run_config)
-        } else if (run_mode === Constants.RunMode.PURITY_ESTIMATE) {
-            PURITY_ESTIMATE(inputs, run_config)
-        } else if (run_mode === Constants.RunMode.PANEL_RESOURCE_CREATION) {
-            PANEL_RESOURCE_CREATION(inputs, run_config)
+        //} else if (run_mode === Constants.RunMode.TARGETED) {
+        //    TARGETED(inputs, run_config)
+        //} else if (run_mode === Constants.RunMode.PURITY_ESTIMATE) {
+        //    PURITY_ESTIMATE(inputs, run_config)
+        //} else if (run_mode === Constants.RunMode.PANEL_RESOURCE_CREATION) {
+        //    PANEL_RESOURCE_CREATION(inputs, run_config)
         } else {
             log.error("received bad run mode: ${run_mode}")
             Nextflow.exit(1)
