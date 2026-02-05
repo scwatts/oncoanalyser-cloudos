@@ -93,17 +93,11 @@ workflow NFCORE_ONCOANALYSER {
         if (run_mode === Constants.RunMode.WGTS) {
             WGTS(inputs, run_config)
         } else if (run_mode === Constants.RunMode.TARGETED) {
-            //TARGETED(inputs, run_config)
-            log.error("targeted run mode not supported")
-            Nextflow.exit(1)
+            TARGETED(inputs, run_config)
         } else if (run_mode === Constants.RunMode.PURITY_ESTIMATE) {
-            //PURITY_ESTIMATE(inputs, run_config)
-            log.error("purity_estimate run mode not supported")
-            Nextflow.exit(1)
+            PURITY_ESTIMATE(inputs, run_config)
         } else if (run_mode === Constants.RunMode.PANEL_RESOURCE_CREATION) {
-            //PANEL_RESOURCE_CREATION(inputs, run_config)
-            log.error("panel_resource_creation run mode not supported")
-            Nextflow.exit(1)
+            PANEL_RESOURCE_CREATION(inputs, run_config)
         } else {
             log.error("received bad run mode: ${run_mode}")
             Nextflow.exit(1)

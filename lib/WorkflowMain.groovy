@@ -338,7 +338,6 @@ class WorkflowMain {
             has_rna: inputs.any { Utils.hasTumorRna(it) },
             has_rna_fastq: inputs.any { Utils.hasTumorRnaFastq(it) },
             has_dna_fastq: inputs.any { Utils.hasTumorDnaFastq(it) || Utils.hasNormalDnaFastq(it) },
-            cram_to_fastq: inputs.any { Utils.hasTumorCramConvertDna(it) || Utils.hasNormalCramConvertDna(it) || Utils.hasDonorCramConvertDna(it) },
         ]
     }
 
@@ -351,7 +350,7 @@ class WorkflowMain {
             require_dict: true,
             require_img: true,
 
-            require_bwamem2_index: (run_config.has_dna_fastq || run_config.cram_to_fastq) && run_config.stages.alignment,
+            require_bwamem2_index: run_config.has_dna_fastq && run_config.stages.alignment,
             require_star_index: run_config.has_rna_fastq && run_config.stages.alignment,
 
             require_gridss_index: run_config.has_dna && run_config.mode === Constants.RunMode.WGTS && run_config.stages.virusinterpreter,
