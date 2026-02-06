@@ -9,6 +9,7 @@ process PICARD_FIXMATEINFORMATION {
     input:
     tuple val(meta), path(bam), path(bai)
     path genome_fasta
+    path genome_fai
 
     output:
     tuple val(meta), path('*.bam'), path('*.bai'), emit: bam
