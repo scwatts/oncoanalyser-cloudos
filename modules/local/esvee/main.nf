@@ -44,7 +44,7 @@ process ESVEE {
     mkdir -p esvee/
 
     esvee \\
-        -Xmx${Math.round(task.memory.bytes * 0.95)} \\
+        -Xmx${Math.round(task.memory.bytes * 0.75)} \\
         ${args} \\
         -tumor ${meta.tumor_id} \\
         -tumor_bam ${tumor_bam} \\
