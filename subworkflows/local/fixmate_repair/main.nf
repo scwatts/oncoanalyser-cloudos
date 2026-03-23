@@ -1,20 +1,23 @@
 //
-// Picard fix mate information sets the mate CIGAR string tag
+// Fix mate information
 //
 
 import Constants
 import Utils
 
-include { PICARD_FIXMATEINFORMATION as FIXMATEINFORMATION } from '../../../modules/local/picard/fixmateinformation/main'
+import java.nio.channels.Channel
 
-workflow PICARD_FIXMATEINFORMATION {
+include { SAMTOOLS_FIXMATE } from '../../../modules/local/samtools/fixmate/main'
+
+workflow FIXMATE_REPAIR {
     take:
     // Sample data
-    ch_inputs    // channel: [mandatory] [ meta ]
+    ch_inputs // channel: [mandatory] [ meta ]
 
     // Reference data
     genome_fasta // channel: [mandatory] /path/to/genome_fasta
     genome_fai   // channel: [mandatory] /path/to/genome_fai
+    genome_dict  // channel: [mandatory] /path/to/genome_dict
 
     main:
     // Channel for version.yml files
@@ -45,10 +48,10 @@ workflow PICARD_FIXMATEINFORMATION {
         }
 
     //
-    // MODULE: picard fixmateinformation
+    // MODULE: SAMtools fixmate
     //
     // Create process input channel
-    // channel: [ meta_picard, bam, bai ]
+    // channel: [ meta_samtools, bam, bai ]
     ch_fixmate_inputs = Channel.empty()
         .mix(
             ch_inputs_tumor_sorted.runnable.map { meta -> [meta, Utils.getTumorDnaSample(meta), 'tumor'] },
@@ -56,34 +59,34 @@ workflow PICARD_FIXMATEINFORMATION {
             ch_inputs_donor_sorted.runnable.map { meta -> [meta, Utils.getDonorDnaSample(meta), 'donor'] },
         )
         .map { meta, meta_sample, sample_type ->
-              def meta_picard = [
+              def meta_samtools = [
                   key: meta.group_id,
                   id: "${meta.group_id}_${meta_sample['sample_id']}",
                   sample_type: sample_type,
               ]
 
-              return [meta_picard, meta_sample.getOrDefault(Constants.FileType.BAM, null), meta_sample.getOrDefault(Constants.FileType.BAI, null)]
+              return [meta_samtools, meta_sample.getOrDefault(Constants.FileType.BAM, null), meta_sample.getOrDefault(Constants.FileType.BAI, null)]
         }
 
     // Run process
-    FIXMATEINFORMATION(
+    SAMTOOLS_FIXMATE(
         ch_fixmate_inputs,
         genome_fasta,
         genome_fai,
     )
 
-    ch_versions = ch_versions.mix(FIXMATEINFORMATION.out.versions)
+    ch_versions = ch_versions.mix(SAMTOOLS_FIXMATE.out.versions)
 
     // Sort BAMs
     // NOTE(SW): always expect exactly one BAM per sample; nesting within list for downstream compatibility
-    // channel: [ meta_picard, [bam], [bai] ]
-    ch_bams_united = FIXMATEINFORMATION.out.bam
-        .map { meta_picard, bam, bai -> return [meta_picard, [bam], [bai]] }
-        .branch { meta_picard, bam, bai ->
-            assert ['tumor', 'normal', 'donor'].contains(meta_picard.sample_type)
-            tumor: meta_picard.sample_type == 'tumor'
-            normal: meta_picard.sample_type == 'normal'
-            donor: meta_picard.sample_type == 'donor'
+    // channel: [ meta_samtools, [bam], [bai] ]
+    ch_bams_united = SAMTOOLS_FIXMATE.out.bam
+        .map { meta_samtools, bam, bai -> return [meta_samtools, [bam], [bai]] }
+        .branch { meta_samtools, bam, bai ->
+            assert ['tumor', 'normal', 'donor'].contains(meta_samtools.sample_type)
+            tumor: meta_samtools.sample_type == 'tumor'
+            normal: meta_samtools.sample_type == 'normal'
+            donor: meta_samtools.sample_type == 'donor'
             placeholder: true
         }
 

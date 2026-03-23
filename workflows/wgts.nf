@@ -15,6 +15,7 @@ include { CIDER_CALLING             } from '../subworkflows/local/cider_calling'
 include { COBALT_PROFILING          } from '../subworkflows/local/cobalt_profiling'
 include { CUPPA_PREDICTION          } from '../subworkflows/local/cuppa_prediction'
 include { ESVEE_CALLING             } from '../subworkflows/local/esvee_calling'
+include { FIXMATE_REPAIR            } from '../subworkflows/local/fixmate_repair'
 include { ISOFOX_QUANTIFICATION     } from '../subworkflows/local/isofox_quantification'
 include { LILAC_CALLING             } from '../subworkflows/local/lilac_calling'
 include { LINX_ANNOTATION           } from '../subworkflows/local/linx_annotation'
@@ -23,7 +24,6 @@ include { NEO_PREDICTION            } from '../subworkflows/local/neo_prediction
 include { ORANGE_REPORTING          } from '../subworkflows/local/orange_reporting'
 include { PAVE_ANNOTATION           } from '../subworkflows/local/pave_annotation'
 include { PEACH_CALLING             } from '../subworkflows/local/peach_calling'
-include { PICARD_FIXMATEINFORMATION } from '../subworkflows/local/picard_fixmateinformation'
 include { PREPARE_REFERENCE         } from '../subworkflows/local/prepare_reference'
 include { PURPLE_CALLING            } from '../subworkflows/local/purple_calling'
 include { READ_ALIGNMENT_DNA        } from '../subworkflows/local/read_alignment_dna'
@@ -140,17 +140,18 @@ workflow WGTS {
     ch_fixmate_dna_donor_out = Channel.empty()
     if (params.fix_mate_information === true) {
 
-        PICARD_FIXMATEINFORMATION(
+        FIXMATE_REPAIR(
             ch_inputs,
             ref_data.genome_fasta,
             ref_data.genome_fai,
+            ref_data.genome_dict,
         )
 
-        ch_versions = ch_versions.mix(PICARD_FIXMATEINFORMATION.out.versions)
+        ch_versions = ch_versions.mix(FIXMATE_REPAIR.out.versions)
 
-        ch_fixmate_dna_tumor_out = ch_fixmate_dna_tumor_out.mix(PICARD_FIXMATEINFORMATION.out.dna_tumor)
-        ch_fixmate_dna_normal_out = ch_fixmate_dna_normal_out.mix(PICARD_FIXMATEINFORMATION.out.dna_normal)
-        ch_fixmate_dna_donor_out = ch_fixmate_dna_donor_out.mix(PICARD_FIXMATEINFORMATION.out.dna_donor)
+        ch_fixmate_dna_tumor_out = ch_fixmate_dna_tumor_out.mix(FIXMATE_REPAIR.out.dna_tumor)
+        ch_fixmate_dna_normal_out = ch_fixmate_dna_normal_out.mix(FIXMATE_REPAIR.out.dna_normal)
+        ch_fixmate_dna_donor_out = ch_fixmate_dna_donor_out.mix(FIXMATE_REPAIR.out.dna_donor)
 
     } else {
 
